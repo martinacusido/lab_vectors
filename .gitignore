@@ -1,3 +1,6 @@
 laboratorio/
 results/
 __pycache__/
+venv/
+chroma_db/
+.vscode/
