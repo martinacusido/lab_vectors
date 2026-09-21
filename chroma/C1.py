@@ -50,6 +50,12 @@ def main():
         for doc_id, elapsed in zip(ids, times):
             writer.writerow([doc_id, elapsed])
 
+    print("\n--- Estadístiques de temps d'actualització d'embeddings ---")
+    print(f"Mínim: {min(times):.6f} segons")
+    print(f"Màxim: {max(times):.6f} segons")
+    print(f"Mitjana: {statistics.mean(times):.6f} segons")
+    print(f"Desviació estàndard: {statistics.stdev(times):.6f} segons")
+
     print("\nC1 finalitzat correctament.")
     print(f"Temps guardats a: {OUTPUT_FILE}")
 

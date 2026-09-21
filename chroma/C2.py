@@ -1,5 +1,6 @@
 import csv
 import time
+import statistics
 import chromadb
 
 OUTPUT_FILE = "results/chroma_query_times.csv"
@@ -11,15 +12,22 @@ def main():
     client = chromadb.PersistentClient(path="./chroma_db")
     col_l2 = client.get_collection("sentences_l2")
     col_cos = client.get_collection("sentences_cosine")
-
+    
     results = []
+    
+    # Diccionaris per acumular els temps de cada mètrica per separat
+    metric_times = {
+        "euclidean": [],
+        "cosine": []
+    }
+    
     print("Començant les consultes C2...")
     
     for query_id in QUERY_IDS:
         # Obtenim l'embedding objectiu prèviament calculat
         target_data = col_l2.get(ids=[query_id], include=["embeddings"])
         target_emb = target_data['embeddings'][0]
-
+        
         # Iterem per les dues col·leccions per obtenir les dues mètriques demanades
         for metric, col in [("euclidean", col_l2), ("cosine", col_cos)]:
             print(f"Consulta ID {query_id} - {metric}")
@@ -32,8 +40,10 @@ def main():
                 include=["distances"]
             )
             end = time.perf_counter()
+            
             elapsed = end - start
-
+            metric_times[metric].append(elapsed) # Guardem el temps per a l'estadística
+            
             res_ids = search_results['ids'][0]
             res_dists = search_results['distances'][0]
             
@@ -42,7 +52,7 @@ def main():
             
             top1_id, top1_dist = filtered[0]
             top2_id, top2_dist = filtered[1]
-
+            
             results.append([
                 query_id,
                 metric,
@@ -53,6 +63,15 @@ def main():
                 top2_dist
             ])
             print(f"  Temps: {elapsed:.6f} s | Top 1: ID {top1_id} | Top 2: ID {top2_id}")
+
+    # Impressió de les estadístiques per cada mètrica
+    print("\n--- Estadístiques de temps de consulta ---")
+    for metric, times_list in metric_times.items():
+        print(f"\nMètrica: {metric.upper()}")
+        print(f"Mínim: {min(times_list):.6f} segons")
+        print(f"Màxim: {max(times_list):.6f} segons")
+        print(f"Mitjana: {statistics.mean(times_list):.6f} segons")
+        print(f"Desviació estàndard: {statistics.stdev(times_list):.6f} segons")
 
     with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -66,7 +85,7 @@ def main():
             "top2_distance"
         ])
         writer.writerows(results)
-
+        
     print("\nC2 finalitzat correctament.")
     print(f"Resultats guardats a: {OUTPUT_FILE}")
 

@@ -52,6 +52,12 @@ def main():
         for i, elapsed in enumerate(times, start=1):
             writer.writerow([i, elapsed])
 
+    print("\n--- Estadístiques de temps d'inserció ---")
+    print(f"Mínim: {min(times):.6f} segons")
+    print(f"Màxim: {max(times):.6f} segons")
+    print(f"Mitjana: {statistics.mean(times):.6f} segons")
+    print(f"Desviació estàndard: {statistics.stdev(times):.6f} segons")
+
     print("\nC0 finalitzat correctament.")
     print(f"Temps guardats a: {OUTPUT_FILE}")
 
