@@ -1,6 +1,7 @@
 import csv
 import time
 import chromadb
+import statistics
 
 INPUT_FILE = "data/sentences.txt"
 OUTPUT_FILE = "results/chroma_text_times.csv"

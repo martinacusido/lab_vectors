@@ -2,6 +2,7 @@ import csv
 import time
 import chromadb
 from sentence_transformers import SentenceTransformer
+import statistics
 
 OUTPUT_FILE = "results/chroma_embedding_times.csv"
 
