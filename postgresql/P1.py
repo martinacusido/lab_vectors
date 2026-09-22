@@ -72,12 +72,12 @@ def main():
     conn.close()
 
     # Guardem els temps de cada operació
-    with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
+
+     with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["sentence_id", "time_seconds"])
-
-        for sentence_id, elapsed in zip(ids, times):
-            writer.writerow([sentence_id, elapsed])
+        for doc_id, elapsed in zip(ids, times):
+            writer.writerow([doc_id, elapsed])
 
     print()
     print("P1 finalitzat correctament.")

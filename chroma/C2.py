@@ -4,6 +4,7 @@ import statistics
 import chromadb
 
 OUTPUT_FILE = "results/chroma_query_times.csv"
+
 # Els mateixos IDs exactes utilitzats a P2 per fer justa la comparació
 QUERY_IDS = ['101', '1101', '2101', '3101', '4101', '5101', '6101', '7101', '8101', '9101']
 
@@ -24,9 +25,10 @@ def main():
     print("Començant les consultes C2...")
     
     for query_id in QUERY_IDS:
-        # Obtenim l'embedding objectiu prèviament calculat
-        target_data = col_l2.get(ids=[query_id], include=["embeddings"])
+        # Obtenim l'embedding objectiu prèviament calculat i també el seu text
+        target_data = col_l2.get(ids=[query_id], include=["embeddings", "documents"])
         target_emb = target_data['embeddings'][0]
+        target_text = target_data['documents'][0]
         
         # Iterem per les dues col·leccions per obtenir les dues mètriques demanades
         for metric, col in [("euclidean", col_l2), ("cosine", col_cos)]:
@@ -37,7 +39,7 @@ def main():
             search_results = col.query(
                 query_embeddings=[target_emb],
                 n_results=3,
-                include=["distances"]
+                include=["distances", "documents"]
             )
             end = time.perf_counter()
             
@@ -46,20 +48,24 @@ def main():
             
             res_ids = search_results['ids'][0]
             res_dists = search_results['distances'][0]
+            res_texts = search_results['documents'][0]
             
             # Filtrem el propi ID perquè l'enunciat demana "entre totes les ALTRES frases"
-            filtered = [(i, d) for i, d in zip(res_ids, res_dists) if i != query_id]
+            filtered = [(i, d, t) for i, d, t in zip(res_ids, res_dists, res_texts) if i != query_id]
             
-            top1_id, top1_dist = filtered[0]
-            top2_id, top2_dist = filtered[1]
+            top1_id, top1_dist, top1_text = filtered[0]
+            top2_id, top2_dist, top2_text = filtered[1]
             
             results.append([
                 query_id,
+                target_text,
                 metric,
                 elapsed,
                 top1_id,
+                top1_text,
                 top1_dist,
                 top2_id,
+                top2_text,
                 top2_dist
             ])
             print(f"  Temps: {elapsed:.6f} s | Top 1: ID {top1_id} | Top 2: ID {top2_id}")
@@ -77,11 +83,14 @@ def main():
         writer = csv.writer(f)
         writer.writerow([
             "query_id",
+            "query_text",
             "metric",
             "time_seconds",
             "top1_id",
+            "top1_text",
             "top1_distance",
             "top2_id",
+            "top2_text",
             "top2_distance"
         ])
         writer.writerows(results)
