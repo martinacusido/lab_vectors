@@ -1,5 +1,6 @@
 import csv
 import time
+import hashlib
 
 import numpy as np
 import psycopg
@@ -32,8 +33,33 @@ def main():
 
     print(f"Frases llegides: {len(sentences)}")
 
-    # Generem tots els embeddings
-    print("Generant embeddings...")
+    # ---------------------------------------------------------
+    # COMPROVACIÓ DE LES FRASES
+    # ---------------------------------------------------------
+
+    print("\n--- Primeres 5 frases ---")
+    for sentence_id, sentence in list(zip(ids, sentences))[:5]:
+        print(f"ID {sentence_id}: {sentence}")
+
+    print("\n--- Últimes 5 frases ---")
+    for sentence_id, sentence in list(zip(ids, sentences))[-5:]:
+        print(f"ID {sentence_id}: {sentence}")
+
+    # Hash de tot el corpus
+    corpus_text = "\n".join(sentences)
+    corpus_hash = hashlib.sha256(
+        corpus_text.encode("utf-8")
+    ).hexdigest()
+
+    print("\n--- Hash del corpus ---")
+    print(f"Hash: {corpus_hash}")
+
+    # ---------------------------------------------------------
+    # GENERACIÓ DELS EMBEDDINGS
+    # ---------------------------------------------------------
+
+    print("\nGenerant embeddings...")
+
     embeddings = model.encode(
         sentences,
         convert_to_numpy=True,
@@ -43,10 +69,28 @@ def main():
     print(f"Embeddings generats: {len(embeddings)}")
     print(f"Dimensions de cada embedding: {embeddings.shape[1]}")
 
+    # ---------------------------------------------------------
+    # MOSTRA D'EMBEDDINGS
+    # ---------------------------------------------------------
+
+    print("\n--- Mostra d'embeddings ---")
+
+    sample_indexes = [0, 100, 1000]
+
+    for i in sample_indexes:
+        if i < len(embeddings):
+            print(f"\nID {ids[i]}")
+            print(f"Frase: {sentences[i]}")
+            print(f"Embedding[:5]: {embeddings[i][:5]}")
+            print(f"Norma: {np.linalg.norm(embeddings[i]):.8f}")
+
+    # ---------------------------------------------------------
+    # GUARDAR ELS EMBEDDINGS A POSTGRESQL
+    # ---------------------------------------------------------
+
     times = []
 
-    # Guardem els embeddings a PostgreSQL
-    print("Guardant embeddings a PostgreSQL...")
+    print("\nGuardant embeddings a PostgreSQL...")
 
     with conn:
         with conn.cursor() as cur:
@@ -58,7 +102,10 @@ def main():
 
                 cur.execute(
                     "UPDATE sentences SET embedding = %s WHERE id = %s",
-                    (embedding.astype(np.float32).tolist(), sentence_id)
+                    (
+                        embedding.astype(np.float32).tolist(),
+                        sentence_id
+                    )
                 )
 
                 end = time.perf_counter()
@@ -71,9 +118,17 @@ def main():
 
     conn.close()
 
-    # Guardem els temps de cada operació
+    # ---------------------------------------------------------
+    # GUARDAR ELS TEMPS
+    # ---------------------------------------------------------
 
-     with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
+    with open(
+        OUTPUT_FILE,
+        "w",
+        newline="",
+        encoding="utf-8"
+    ) as f:
+
         writer = csv.writer(f)
         writer.writerow(["sentence_id", "time_seconds"])
         for doc_id, elapsed in zip(ids, times):
