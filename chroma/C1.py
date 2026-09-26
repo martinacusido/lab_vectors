@@ -1,6 +1,5 @@
 import csv
 import time
-import hashlib
 
 import chromadb
 import numpy as np
@@ -31,34 +30,6 @@ def main():
     sorted_data = sorted(zip(ids, sentences), key=lambda x: int(x[0]))
     ids, sentences = zip(*sorted_data)
 
-    # Convertim a llistes per facilitar les comprovacions
-    ids = list(ids)
-    sentences = list(sentences)
-
-    # ---------------------------------------------------------
-    # COMPROVACIÓ DE LES FRASES
-    # ---------------------------------------------------------
-
-    print("\n--- Primeres 5 frases ---")
-    for sentence_id, sentence in list(zip(ids, sentences))[:5]:
-        print(f"ID {sentence_id}: {sentence}")
-
-    print("\n--- Últimes 5 frases ---")
-    for sentence_id, sentence in list(zip(ids, sentences))[-5:]:
-        print(f"ID {sentence_id}: {sentence}")
-
-    # ---------------------------------------------------------
-    # HASH DEL CORPUS
-    # ---------------------------------------------------------
-
-    corpus_text = "\n".join(sentences)
-    corpus_hash = hashlib.sha256(
-        corpus_text.encode("utf-8")
-    ).hexdigest()
-
-    print("\n--- Hash del corpus ---")
-    print(f"Hash: {corpus_hash}")
-
     # ---------------------------------------------------------
     # GENERACIÓ DELS EMBEDDINGS
     # ---------------------------------------------------------
@@ -76,23 +47,6 @@ def main():
     print(f"Embeddings generats: {len(embeddings_list)}")
     print(f"Dimensions de cada embedding: {embeddings.shape[1]}")
 
-    # ---------------------------------------------------------
-    # MOSTRA D'EMBEDDINGS
-    # ---------------------------------------------------------
-
-    print("\n--- Mostra d'embeddings ---")
-
-    sample_indices = [0, 100, 1000]
-
-    for index in sample_indices:
-        sentence_id = ids[index]
-        sentence = sentences[index]
-        embedding = embeddings[index]
-
-        print(f"\nID {sentence_id}")
-        print(f"Frase: {sentence}")
-        print(f"Embedding[:5]: {embedding[:5]}")
-        print(f"Norma: {np.linalg.norm(embedding):.8f}")
 
     # ---------------------------------------------------------
     # ACTUALITZACIÓ DELS EMBEDDINGS A CHROMA
@@ -154,7 +108,6 @@ def main():
     # ---------------------------------------------------------
 
     print("\n--- Estadístiques de temps d'actualització d'embeddings ---")
-
     print(f"Mínim: {min(times):.6f} segons")
     print(f"Màxim: {max(times):.6f} segons")
     print(f"Mitjana: {statistics.mean(times):.6f} segons")

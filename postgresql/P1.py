@@ -1,14 +1,19 @@
 import csv
+import os
 import time
 import hashlib
-
+import statistics
 import numpy as np
 import psycopg
+from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
+load_dotenv()
 
-DB_NAME = "vector_lab"
-DB_USER = "propietario"
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_NAME = os.getenv("DB_NAME", "postgres")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 
 OUTPUT_FILE = "results/postgresql_embedding_times.csv"
 
@@ -19,8 +24,10 @@ def main():
 
     print("Connectant amb PostgreSQL...")
     conn = psycopg.connect(
+        host=DB_HOST,
         dbname=DB_NAME,
-        user=DB_USER
+        user=DB_USER,
+        password= DB_PASSWORD
     )
 
     # Llegim les frases i els seus IDs
@@ -32,27 +39,6 @@ def main():
     sentences = [row[1] for row in rows]
 
     print(f"Frases llegides: {len(sentences)}")
-
-    # ---------------------------------------------------------
-    # COMPROVACIÓ DE LES FRASES
-    # ---------------------------------------------------------
-
-    print("\n--- Primeres 5 frases ---")
-    for sentence_id, sentence in list(zip(ids, sentences))[:5]:
-        print(f"ID {sentence_id}: {sentence}")
-
-    print("\n--- Últimes 5 frases ---")
-    for sentence_id, sentence in list(zip(ids, sentences))[-5:]:
-        print(f"ID {sentence_id}: {sentence}")
-
-    # Hash de tot el corpus
-    corpus_text = "\n".join(sentences)
-    corpus_hash = hashlib.sha256(
-        corpus_text.encode("utf-8")
-    ).hexdigest()
-
-    print("\n--- Hash del corpus ---")
-    print(f"Hash: {corpus_hash}")
 
     # ---------------------------------------------------------
     # GENERACIÓ DELS EMBEDDINGS
@@ -69,20 +55,6 @@ def main():
     print(f"Embeddings generats: {len(embeddings)}")
     print(f"Dimensions de cada embedding: {embeddings.shape[1]}")
 
-    # ---------------------------------------------------------
-    # MOSTRA D'EMBEDDINGS
-    # ---------------------------------------------------------
-
-    print("\n--- Mostra d'embeddings ---")
-
-    sample_indexes = [0, 100, 1000]
-
-    for i in sample_indexes:
-        if i < len(embeddings):
-            print(f"\nID {ids[i]}")
-            print(f"Frase: {sentences[i]}")
-            print(f"Embedding[:5]: {embeddings[i][:5]}")
-            print(f"Norma: {np.linalg.norm(embeddings[i]):.8f}")
 
     # ---------------------------------------------------------
     # GUARDAR ELS EMBEDDINGS A POSTGRESQL
@@ -134,7 +106,12 @@ def main():
         for doc_id, elapsed in zip(ids, times):
             writer.writerow([doc_id, elapsed])
 
-    print()
+    print("\n--- Estadístiques de temps d'actualització d'embeddings ---")
+    print(f"Mínim: {min(times):.6f} segons")
+    print(f"Màxim: {max(times):.6f} segons")
+    print(f"Mitjana: {statistics.mean(times):.6f} segons")
+    print(f"Desviació estàndard: {statistics.stdev(times):.6f} segons")
+    
     print("P1 finalitzat correctament.")
     print(f"Temps guardats a: {OUTPUT_FILE}")
 

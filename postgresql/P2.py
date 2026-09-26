@@ -1,9 +1,16 @@
 import csv
+import os
+import statistics
 import time
 import psycopg
+from dotenv import load_dotenv
 
-DB_NAME = "vector_lab"
-DB_USER = "propietario"
+load_dotenv()
+
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_NAME = os.getenv("DB_NAME", "postgres")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 OUTPUT_FILE = "results/postgresql_query_times.csv"
 
 QUERY_IDS = [
@@ -14,8 +21,10 @@ QUERY_IDS = [
 def main():
     print("Connectant amb PostgreSQL...")
     conn = psycopg.connect(
+        host=DB_HOST,
         dbname=DB_NAME,
-        user=DB_USER
+        user=DB_USER,
+        password= DB_PASSWORD
     )
     
     with conn.cursor() as cur:
@@ -79,6 +88,12 @@ def main():
         """)
     conn.commit()
     print("Funcions preparades.\n")
+
+    # Diccionaris per acumular els temps de cada mètrica per separat
+    metric_times = {
+        "euclidean": [],
+        "cosine": []
+    }
     
     results = []
     print("Començant les consultes P2...")
@@ -117,7 +132,7 @@ def main():
                 end = time.perf_counter()
                 
             elapsed = end - start
-            
+            metric_times[metric].append(elapsed)
             # nearest[0][0] = s.id, nearest[0][1] = s.text, 
             # nearest[0][2] = distance, nearest[0][3] = target_text
             query_text = nearest[0][3]
@@ -163,6 +178,14 @@ def main():
             "top2_distance"
         ])
         writer.writerows(results)
+
+    print("\n--- Estadístiques de temps de consulta ---")
+    for metric, times_list in metric_times.items():
+        print(f"\nMètrica: {metric.upper()}")
+        print(f"Mínim: {min(times_list):.6f} segons")
+        print(f"Màxim: {max(times_list):.6f} segons")
+        print(f"Mitjana: {statistics.mean(times_list):.6f} segons")
+        print(f"Desviació estàndard: {statistics.stdev(times_list):.6f} segons")
         
     print("\nP2 finalitzat correctament.")
     print(f"Resultats guardats a: {OUTPUT_FILE}")
