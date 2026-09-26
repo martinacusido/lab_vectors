@@ -1,4 +1,4 @@
-# Lab: On the Impedance Mismatch of Vector Data
+# Lab 1: On the Impedance Mismatch of Vector Data
 
 Aquest repositori conté el codi per a la pràctica sobre el _impedance mismatch_ de dades vectorials, comparant el rendiment i l'ús d'una base de dades relacional tradicional (PostgreSQL), una base de dades nativa vectorial (ChromaDB) i una solució híbrida (Pgvector).
 
